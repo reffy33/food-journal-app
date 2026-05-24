@@ -11,7 +11,8 @@ import {
   ActivityIndicator,
   Platform,
   Button,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  ScrollView
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -29,6 +30,7 @@ const HomeScreen = ({ route }) => {
   const [description, setDescription] = useState('');
   const [journals, setJournals] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [filter, setFilter] = useState('All');
   const [category, setCategory] = useState('All');
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -197,9 +199,9 @@ const HomeScreen = ({ route }) => {
   };
 
   // Filter journals by category
-  const filteredJournals = category === 'All'
+  const filteredJournals = filter === 'All'
     ? journals
-    : journals.filter((item) => item.category === category);
+    : journals.filter((item) => item.category === filter);
 
   // Loading state
   if (isLoading) {
@@ -261,162 +263,165 @@ const HomeScreen = ({ route }) => {
         </View>
       </Modal>
 
-      {/* Journal Input Section */}
-      <View style={styles.inputContainer}>
-        <Text style={styles.sectionTitle}>
-          {editingId ? 'Edit Journal Entry' : 'Add New Journal Entry'}
-        </Text>
-
-        {/* Image Preview */}
-        {image ? (
-          <Image source={{ uri: image }} style={styles.previewImage} />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <Text>No image selected</Text>
-          </View>
-        )}
-
-        {/* Image Selection Buttons */}
-        <View style={styles.buttonGroup}>
-          <TouchableOpacity
-            style={styles.imageButton}
-            onPress={() => setIsCameraOpen(true)}
-          >
-            <Text style={styles.buttonText}>Take Photo</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.imageButton}
-            onPress={pickImage}
-          >
-            <Text style={styles.buttonText}>Choose from Gallery</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Description Input */}
-        <TextInput
-          placeholder="What did you eat? Add details..."
-          value={description}
-          onChangeText={setDescription}
-          style={styles.input}
-          multiline
-          numberOfLines={3}
-        />
-
-        {/* Category Picker */}
-        <View style={styles.pickerContainer}>
-          <Text style={styles.pickerLabel}>Category:</Text>
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={category}
-              onValueChange={(itemValue) => setCategory(itemValue)}
-              style={styles.picker}
-            >
-              {categories.map((cat) => (
-                <Picker.Item key={cat} label={cat} value={cat} />
-              ))}
-            </Picker>
-          </View>
-        </View>
-
-        {/* Save/Update Button */}
-        <TouchableOpacity
-          style={styles.saveButton}
-          onPress={saveJournal}
-        >
-          <Text style={styles.saveButtonText}>
-            {editingId ? 'Update Journal' : 'Save Journal'}
+      <ScrollView
+      >
+        {/* Journal Input Section */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.sectionTitle}>
+            {editingId ? 'Edit Journal Entry' : 'Add New Journal Entry'}
           </Text>
-        </TouchableOpacity>
 
-        {/* Cancel Edit Button (visible only when editing) */}
-        {editingId && (
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={resetForm}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+          {/* Image Preview */}
+          {image ? (
+            <Image source={{ uri: image }} style={styles.previewImage} />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <Text>No image selected</Text>
+            </View>
+          )}
 
-      {/* Journal List Section */}
-      <View style={styles.listContainer}>
-        <Text style={styles.sectionTitle}>Your Food Journals</Text>
-
-        {/* Category Filter */}
-        <View style={styles.filterContainer}>
-          <Text style={styles.filterLabel}>Filter by:</Text>
-          <View style={styles.filterPickerWrapper}>
-            <Picker
-              selectedValue={category}
-              onValueChange={(itemValue) => setCategory(itemValue)}
-              style={styles.filterPicker}
+          {/* Image Selection Buttons */}
+          <View style={styles.buttonGroup}>
+            <TouchableOpacity
+              style={styles.imageButton}
+              onPress={() => setIsCameraOpen(true)}
             >
-              {categories.map((cat) => (
-                <Picker.Item key={cat} label={cat} value={cat} />
-              ))}
-            </Picker>
+              <Text style={styles.buttonText}>Take Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.imageButton}
+              onPress={pickImage}
+            >
+              <Text style={styles.buttonText}>Choose from Gallery</Text>
+            </TouchableOpacity>
           </View>
+
+          {/* Description Input */}
+          <TextInput
+            placeholder="What did you eat? Add details..."
+            value={description}
+            onChangeText={setDescription}
+            style={styles.input}
+            multiline
+            numberOfLines={3}
+          />
+
+          {/* Category Picker */}
+          <View style={styles.pickerContainer}>
+            <Text style={styles.pickerLabel}>Category:</Text>
+            <View style={styles.pickerWrapper}>
+              <Picker
+                selectedValue={category}
+                onValueChange={(itemValue) => setCategory(itemValue)}
+                style={styles.picker}
+              >
+                {categories.map((cat) => (
+                  <Picker.Item key={cat} label={cat} value={cat} />
+                ))}
+              </Picker>
+            </View>
+          </View>
+
+          {/* Save/Update Button */}
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={saveJournal}
+          >
+            <Text style={styles.saveButtonText}>
+              {editingId ? 'Update Journal' : 'Save Journal'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Cancel Edit Button (visible only when editing) */}
+          {editingId && (
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={resetForm}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* Journal List */}
-        {filteredJournals.length > 0 ? (
-          <SwipeListView
-            data={filteredJournals}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.journalItem}>
-                <Image source={{ uri: item.image }} style={styles.journalImage} />
-                <View style={styles.journalDetails}>
-                  <Text style={styles.journalDescription}>
-                    {item.description}
-                  </Text>
-                  <View style={styles.journalMeta}>
-                    <Text style={styles.journalCategory}>
-                      {item.category}
+        {/* Journal List Section */}
+        <View style={styles.listContainer}>
+          <Text style={styles.sectionTitle}>Your Food Journals</Text>
+
+          {/* Category Filter */}
+          <View style={styles.filterContainer}>
+            <Text style={styles.filterLabel}>Filter by:</Text>
+            <View style={styles.filterPickerWrapper}>
+              <Picker
+                selectedValue={filter}
+                onValueChange={(itemValue) => setFilter(itemValue)}
+              >
+                {categories.map((cat) => (
+                  <Picker.Item key={cat} label={cat} value={cat} />
+                ))}
+              </Picker>
+            </View>
+          </View>
+
+          {/* Journal List */}
+          {filteredJournals.length > 0 ? (
+            <SwipeListView
+              scrollEnabled={false}
+              data={filteredJournals}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.journalItem}>
+                  <Image source={{ uri: item.image }} style={styles.journalImage} />
+                  <View style={styles.journalDetails}>
+                    <Text style={styles.journalDescription}>
+                      {item.description}
                     </Text>
-                    <Text style={styles.journalDate}>
-                      {new Date(item.date).toLocaleDateString()}
-                    </Text>
+                    <View style={styles.journalMeta}>
+                      <Text style={styles.journalCategory}>
+                        {item.category}
+                      </Text>
+                      <Text style={styles.journalDate}>
+                        {new Date(item.date).toLocaleDateString()}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-            )}
-            renderHiddenItem={({ item }) => (
-              <View style={styles.hiddenButtons}>
-                <TouchableOpacity
-                  style={[styles.hiddenButton, styles.editButton]}
-                  onPress={() => {
-                    setEditingId(item.id);
-                    setDescription(item.description);
-                    setImage(item.image);
-                    setCategory(item.category);
-                  }}
-                >
-                  <Text style={styles.hiddenButtonText}>Edit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.hiddenButton, styles.deleteButton]}
-                  onPress={() => deleteJournal(item.id)}
-                >
-                  <Text style={styles.hiddenButtonText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-            rightOpenValue={-150}
-            disableRightSwipe
-            showsVerticalScrollIndicator={false}
-          />
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>
-              {category === 'All'
-                ? 'No journal entries yet. Add your first entry above!'
-                : `No entries in ${category} category`}
-            </Text>
-          </View>
-        )}
-      </View>
+              )}
+              renderHiddenItem={({ item }) => (
+                <View style={styles.hiddenButtons}>
+                  <TouchableOpacity
+                    style={[styles.hiddenButton, styles.editButton]}
+                    onPress={() => {
+                      setEditingId(item.id);
+                      setDescription(item.description);
+                      setImage(item.image);
+                      setCategory(item.category);
+                    }}
+                  >
+                    <Text style={styles.hiddenButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.hiddenButton, styles.deleteButton]}
+                    onPress={() => deleteJournal(item.id)}
+                  >
+                    <Text style={styles.hiddenButtonText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              rightOpenValue={-150}
+              disableRightSwipe
+              showsVerticalScrollIndicator={false}
+            />
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>
+                {category === 'All'
+                  ? 'No journal entries yet. Add your first entry above!'
+                  : `No entries in ${category} category`}
+              </Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 };
@@ -595,9 +600,6 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 5,
   },
-  filterPicker: {
-    height: 40,
-  },
   journalItem: {
     backgroundColor: 'white',
     borderRadius: 8,
@@ -609,6 +611,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+    height: 110
   },
   journalImage: {
     width: 80,
@@ -636,10 +639,11 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   hiddenButtons: {
+    borderRadius: 8,
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
-    height: '100%',
+    height: 110,
   },
   hiddenButton: {
     justifyContent: 'center',
@@ -652,6 +656,8 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     backgroundColor: '#ea4335',
+    borderBottomRightRadius: 9,
+    borderTopRightRadius: 8
   },
   hiddenButtonText: {
     color: 'white',
