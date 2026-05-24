@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,18 +10,21 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Button,
   KeyboardAvoidingView
 } from 'react-native';
-import { Camera } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { SwipeListView } from 'react-native-swipe-list-view';
-import { executeSql } from '../components/database/database';
+import { executeSql, selectMany } from '../components/database/database';
 import { Picker } from '@react-native-picker/picker';
 
 const HomeScreen = ({ route }) => {
   // State management
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [camera, setCamera] = useState(null);
+  const cameraRef = useRef(null);
   const [image, setImage] = useState(null);
   const [description, setDescription] = useState('');
   const [journals, setJournals] = useState([]);
@@ -37,9 +40,9 @@ const HomeScreen = ({ route }) => {
   useEffect(() => {
     const initialize = async () => {
       // Request camera permissions
-      const { status } = await Camera.requestCameraPermissionsAsync();
+      const { status } = await requestPermission();
       setHasCameraPermission(status === 'granted');
-      
+
       // Load journal entries
       await loadJournals();
       setIsLoading(false);
@@ -57,12 +60,12 @@ const HomeScreen = ({ route }) => {
         return;
       }
 
-      const result = await executeSql(
+      const result = await selectMany(
         'SELECT * FROM journals WHERE userId = ? ORDER BY date DESC',
         [userId]
       );
-      
-      setJournals(result.rows._array || []);
+
+      setJournals(result || []);
     } catch (error) {
       console.error('Error loading journals:', error);
       Alert.alert('Error', 'Failed to load journals');
@@ -71,10 +74,10 @@ const HomeScreen = ({ route }) => {
 
   // Take picture with camera
   const takePicture = async () => {
-    if (!camera) return;
-    
+    if (!cameraRef) return;
+
     try {
-      const { uri } = await camera.takePictureAsync({
+      const { uri } = await cameraRef.current?.takePictureAsync({
         quality: 0.8,
       });
       setImage(uri);
@@ -145,7 +148,7 @@ const HomeScreen = ({ route }) => {
         );
         Alert.alert('Success', 'Journal saved successfully');
       }
-      
+
       await loadJournals();
       resetForm();
     } catch (error) {
@@ -208,14 +211,23 @@ const HomeScreen = ({ route }) => {
     );
   }
 
+  if (!permission) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Checking for camera permission</Text>
+      </View>
+    );
+  }
+
   // Camera permission denied
-  if (hasCameraPermission === false) {
+  if (!permission.granted) {
     return (
       <View style={styles.permissionContainer}>
         <Text>Camera permission is required to take photos</Text>
         <Button
           title="Grant Permission"
-          onPress={() => Camera.requestCameraPermissionsAsync()}
+          onPress={requestPermission}
         />
       </View>
     );
@@ -226,12 +238,11 @@ const HomeScreen = ({ route }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      {/* Camera Modal */}
       <Modal visible={isCameraOpen} animationType="slide">
         <View style={styles.cameraContainer}>
-          <Camera
+          <CameraView
             style={styles.camera}
-            ref={(ref) => setCamera(ref)}
+            ref={cameraRef}
             ratio="16:9"
           />
           <View style={styles.cameraButtons}>

@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
-import { executeSql } from '../database/database';
+import { executeSql, selectOne } from '../database/database';
 
 const AuthScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -37,40 +37,40 @@ const AuthScreen = ({ navigation }) => {
 
   const handleAuth = async () => {
     if (!validateInputs()) return;
-    
+
     setIsLoading(true);
     try {
       if (isLogin) {
         // Login logic
-        const result = await executeSql(
+        const result = await selectOne(
           'SELECT id FROM users WHERE email = ? AND password = ?',
           [email, password]
         );
-        
-        if (result.rows.length > 0) {
-          navigation.navigate('Home', { userId: result.rows.item(0).id });
+
+        if (result) {
+          navigation.navigate('Home', { userId: result });
         } else {
           Alert.alert('Authentication Failed', 'Invalid email or password');
         }
       } else {
         // Registration logic
         // First check if email exists
-        const checkResult = await executeSql(
+        const checkResult = await selectOne(
           'SELECT id FROM users WHERE email = ?',
           [email]
         );
-        
-        if (checkResult.rows.length > 0) {
+
+        if (checkResult) {
           Alert.alert('Registration Failed', 'Email already exists');
           return;
         }
-        
+
         const insertResult = await executeSql(
           'INSERT INTO users (email, password) VALUES (?, ?)',
           [email, password]
         );
-        
-        navigation.navigate('Home', { userId: insertResult.insertId });
+
+        navigation.navigate('Home', { userId: insertResult.lastInsertRowId });
       }
     } catch (error) {
       console.error('Database error:', error);
@@ -87,7 +87,7 @@ const AuthScreen = ({ navigation }) => {
     >
       <View style={styles.innerContainer}>
         <Text style={styles.title}>{isLogin ? 'Login' : 'Create Account'}</Text>
-        
+
         <TextInput
           placeholder="Email"
           value={email}
@@ -97,7 +97,7 @@ const AuthScreen = ({ navigation }) => {
           autoCapitalize="none"
           autoCorrect={false}
         />
-        
+
         <TextInput
           placeholder="Password"
           value={password}
@@ -106,7 +106,7 @@ const AuthScreen = ({ navigation }) => {
           secureTextEntry
           autoCapitalize="none"
         />
-        
+
         {isLoading ? (
           <ActivityIndicator size="large" color="#0000ff" />
         ) : (
@@ -120,14 +120,14 @@ const AuthScreen = ({ navigation }) => {
             </Text>
           </TouchableOpacity>
         )}
-        
+
         <TouchableOpacity
           style={styles.switchButton}
           onPress={() => setIsLogin(!isLogin)}
         >
           <Text style={styles.switchButtonText}>
-            {isLogin 
-              ? 'Need an account? Register' 
+            {isLogin
+              ? 'Need an account? Register'
               : 'Already have an account? Login'}
           </Text>
         </TouchableOpacity>

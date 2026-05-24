@@ -8,23 +8,24 @@ let isInitialized = false;
 const initDatabase = async () => {
   try {
     if (isInitialized) return db;
-    
+
     // Open database connection
     db = await SQLite.openDatabaseAsync('FoodJournal.db');
-    
+
     // Create tables
     await db.execAsync('PRAGMA journal_mode = WAL');
-    
-    await db.withTransactionAsync(async (tx) => {
-      await tx.execAsync(
+
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(
         `CREATE TABLE IF NOT EXISTS users (
           id INTEGER PRIMARY KEY AUTOINCREMENT, 
           email TEXT UNIQUE, 
           password TEXT
         );`
       );
-      
-      await tx.execAsync(
+
+
+      await db.execAsync(
         `CREATE TABLE IF NOT EXISTS journals (
           id INTEGER PRIMARY KEY AUTOINCREMENT, 
           userId INTEGER, 
@@ -36,7 +37,7 @@ const initDatabase = async () => {
         );`
       );
     });
-    
+
     isInitialized = true;
     console.log('Database initialized successfully');
     return db;
@@ -52,14 +53,39 @@ const executeSql = async (query, params = []) => {
     if (!isInitialized) {
       await initDatabase();
     }
-    
-    return await db.withTransactionAsync(async (tx) => {
-      return await tx.execAsync(query, params);
-    });
+
+    return await db.runAsync(query, params);
+
   } catch (error) {
     console.error('SQL execution error:', error);
     throw error;
   }
 };
 
-export { initDatabase, executeSql };
+const selectOne = async (query, params = []) => {
+  try {
+    if (!isInitialized) {
+      await initDatabase();
+    }
+
+    return await db.getFirstAsync(query, params);
+  } catch (error) {
+    console.error('SQL execution error:', error);
+    throw error;
+  }
+};
+
+const selectMany = async (query, params = []) => {
+  try {
+    if (!isInitialized) {
+      await initDatabase();
+    }
+
+    return await db.getAllAsync(query, params);
+
+  } catch (error) {
+    console.error('SQL execution error:', error);
+    throw error;
+  }
+};
+export { initDatabase, executeSql, selectOne, selectMany };
